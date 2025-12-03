@@ -10,9 +10,8 @@ import io
 import os
 import json
 import re
-from PIL import Image, ImageTk, ImageChops, ImageStat  # 引入图像计算模块
+from PIL import Image, ImageTk, ImageChops, ImageStat  # 引入图像计算
 
-# 尝试导入pygetwindow
 try:
     import pygetwindow as gw
 except ImportError:
@@ -35,8 +34,7 @@ AUTO_PAUSE_VIDEO = True  # 阶段回顾时是否尝试暂停视频
 # --- 视觉去重参数 ---
 ENABLE_VISUAL_DEDUP = True  # 是否开启视觉去重
 SCENE_CHANGE_THRESHOLD = 2.5  # 差异阈值 (0-255)。
-# 针对字幕区域检测，3.5 是一个比较平衡的值，能忽略压缩噪点但捕捉到字幕切换。
-MAX_SKIP_COUNT = 10  # 即使画面一直不动，每跳过多少次也强制分析一次（防止死锁）
+MAX_SKIP_COUNT = 10  # 即使画面一直不动，每跳过多少次也强制分析一次
 
 # --- 提示词 (Prompt) 设置 ---
 
@@ -81,8 +79,8 @@ PROMPT_FINAL_SUMMARY = (
 class VideoAnalyzerApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Video AI Analyzer V4.2 (Subtitle Sensitive Mode)")
-        self.root.geometry("1100x900")
+        self.root.title("CineScribe_VLM")
+        self.root.geometry("1200x900")
 
         # 数据存储
         self.is_running = False
@@ -127,8 +125,7 @@ class VideoAnalyzerApp:
         self.spin_interval.set(DEFAULT_INTERVAL)
         self.spin_interval.pack(side=tk.LEFT, padx=5)
 
-        # 新增：去重开关显示
-        self.lbl_dedup = ttk.Label(control_frame, text="[视觉去重: ON (字幕增强)]", foreground="blue")
+        self.lbl_dedup = ttk.Label(control_frame, text="[视觉去重: ON ]", foreground="blue")
         self.lbl_dedup.pack(side=tk.LEFT, padx=5)
 
         ttk.Separator(control_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, padx=10, fill=tk.Y)
@@ -192,7 +189,7 @@ class VideoAnalyzerApp:
         self.txt_summary.pack(fill=tk.BOTH, expand=True)
 
         # 右侧：实时单帧日志
-        right_panel = ttk.LabelFrame(main_paned, text="📝 实时单帧记录 (已过滤重复)", width=500)
+        right_panel = ttk.LabelFrame(main_paned, text=" 实时单帧记录", width=500)
         main_paned.add(right_panel, weight=2)
 
         self.txt_log = scrolledtext.ScrolledText(right_panel, state='disabled', font=("Consolas", 10))
@@ -207,7 +204,7 @@ class VideoAnalyzerApp:
     def calculate_image_diff(self, img_new):
         """
         计算当前帧与上一帧的视觉差异度。
-        【优化】仅检测画面下 1/3 区域，以极大提高对字幕变化的敏感度。
+        仅检测画面下 1/3 区域，以极大提高对字幕变化的敏感度。
         """
         if self.last_pil_image is None:
             return 100.0  # 第一帧，差异最大
@@ -534,7 +531,7 @@ class VideoAnalyzerApp:
         final_report = self.perform_final_summary()
         if final_report:
             self.log_final_report(final_report)
-            messagebox.showinfo("完成", "全片影视解说已生成！")
+            messagebox.showinfo("完成", "全片解说已生成")
 
     def perform_final_summary(self):
         context_text = "【全片剧情线索(阶段回顾)】:\n"
@@ -543,7 +540,7 @@ class VideoAnalyzerApp:
 
         messages = [
             {"role": "system", "content": PROMPT_FINAL_SUMMARY},
-            {"role": "user", "content": context_text + "\n\n请生成最终影视解说文案："}
+            {"role": "user", "content": context_text + "\n\n请生成最终解说文案："}
         ]
         return self.call_llm(messages, max_tokens=2000)
 
@@ -551,4 +548,5 @@ class VideoAnalyzerApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = VideoAnalyzerApp(root)
+
     root.mainloop()
