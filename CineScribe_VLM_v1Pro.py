@@ -37,7 +37,7 @@ VLM_MAX_DIMENSION = 1560
 SCENE_CHANGE_THRESHOLD = 2.0
 
 # =========================================================================
-#                                 提示词 (Prompts) - 深度客观版
+#                                 提示词 (Prompts)
 # =========================================================================
 
 PROMPT_OCR = (
@@ -107,7 +107,7 @@ class WindowController:
         hwnd = self.user32.WindowFromPoint(point)
 
         if hwnd:
-            # 获取该句柄的根窗口（防止获取到子控件句柄）
+            # 获取该句柄的根窗口
             root_hwnd = self.user32.GetAncestor(hwnd, 2)  # GA_ROOT = 2
             target_hwnd = root_hwnd if root_hwnd else hwnd
 
@@ -226,7 +226,7 @@ class VideoAnalyzerApp:
         self.lbl_status_detail.pack(anchor="w", fill=tk.X)
 
         # 中间
-        center_frame = ttk.LabelFrame(main_pane, text="📝 实时剧情流 (Detail)", padding=5)
+        center_frame = ttk.LabelFrame(main_pane, text="📝 实时剧情 (Detail)", padding=5)
         main_pane.add(center_frame, weight=3)
         self.txt_stream = scrolledtext.ScrolledText(center_frame, font=("Microsoft YaHei UI", 10), state='disabled',
                                                     padx=10, pady=10)
@@ -236,7 +236,7 @@ class VideoAnalyzerApp:
         self.txt_stream.tag_config("plot", foreground="#333333")
 
         # 右侧
-        right_frame = ttk.LabelFrame(main_pane, text="📖 宏观剧情线 (Summary)", padding=5)
+        right_frame = ttk.LabelFrame(main_pane, text=" 宏观剧情 (Summary)", padding=5)
         main_pane.add(right_frame, weight=2)
         self.txt_summary = scrolledtext.ScrolledText(right_frame, font=("Microsoft YaHei UI", 10), state='disabled',
                                                      padx=10, pady=10)
@@ -342,7 +342,7 @@ class VideoAnalyzerApp:
 
         self.btn_start.config(state=tk.DISABLED)
         self.btn_stop.config(state=tk.NORMAL)
-        self.update_status("分析引擎已启动")
+        self.update_status("分析启动")
 
         threading.Thread(target=self.analysis_loop, daemon=True).start()
 
@@ -377,12 +377,12 @@ class VideoAnalyzerApp:
                 self.root.after(0, lambda: self.update_status(f"捕获中 {current_len}/{BATCH_SIZE}"))
 
                 if current_len >= BATCH_SIZE:
-                    # 【核心修改】并行处理：快照当前数据，启动线程，清空缓冲
+                    # 并行处理：快照当前数据，启动线程，清空缓冲
                     frames_snapshot = list(self.frame_buffer)
                     subs_snapshot = list(self.subtitle_buffer)
                     current_batch_index = batch_counter
 
-                    # 启动分析线程 (不阻塞截图循环)
+                    # 启动分析线程
                     threading.Thread(
                         target=self.process_batch_async,
                         args=(current_batch_index, frames_snapshot, subs_snapshot)
@@ -395,7 +395,7 @@ class VideoAnalyzerApp:
 
                     batch_counter += 1
 
-                    # 阶段回顾仍然保持阻塞（暂停视频）
+                    # 阶段回顾（暂停视频）
                     if batch_counter % SUMMARY_TRIGGER_BATCHES == 0:
                         self.process_phase_summary()
 
@@ -409,7 +409,7 @@ class VideoAnalyzerApp:
         self.root.after(0, lambda: self.update_status("已停止"))
 
     def process_batch_async(self, index, frames, subs):
-        """异步处理单批次分析，不阻塞主循环"""
+        """异步处理单批次分析"""
         self.root.after(0, lambda: self.update_status(f"后台分析批次 {index + 1}...", is_error=True))
 
         # 1. OCR (使用快照数据)
@@ -429,7 +429,7 @@ class VideoAnalyzerApp:
         if stitched_plot:
             stitched_plot = self.adaptive_resize_for_vlm(stitched_plot)
 
-            # 访问共享资源 analysis_logs (读取操作相对安全)
+            # 访问共享资源 analysis_logs 
             history_context = "\n".join(self.analysis_logs[-2:]) if self.analysis_logs else "（无历史记录）"
 
             prompt = PROMPT_BATCH_ANALYSIS.format(
@@ -452,7 +452,7 @@ class VideoAnalyzerApp:
                 self.write_file(entry)
 
     def process_phase_summary(self):
-        """阶段回顾：这是阻塞操作，会暂停视频"""
+        """阶段回顾：暂停视频"""
         # 1. 暂停视频
         self.root.after(0, lambda: self.update_status("⚠️ 阶段回顾，暂停视频..."))
         self.video_ctrl.toggle_play_pause(self.capture_region)
@@ -589,4 +589,5 @@ class RegionSelectionWindow(tk.Toplevel):
 if __name__ == "__main__":
     root = tk.Tk()
     app = VideoAnalyzerApp(root)
+
     root.mainloop()
